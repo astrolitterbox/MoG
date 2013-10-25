@@ -9,11 +9,12 @@ matplotlib.use('Agg')
 from pylab import *
 from numpy import *
 import numpy.random as random
-from generate_data import read_data
+from generate_data_backup import read_data
 from matplotlib import rcParams
 import scipy.linalg as linalg
 from matplotlib.patches import Ellipse
 from matplotlib.colors import LinearSegmentedColormap
+import emcee
 
 # a colormap that goes from white to black: the opposite of matplotlib.gray()
 antigray = LinearSegmentedColormap('antigray',
@@ -30,9 +31,6 @@ def single_point_likelihoods(x, y, yvar, theta, bperp, Pbad, Ybad, Vbad):
 	for i,(xi,yi,yvari) in enumerate(zip(x,y,yvar)):
 		projvar[i] = dot(unitv, dot(yvari, unitv.T))
 		projpos[i] = dot(unitv, array([xi,yi]).T)
-	print projvar, 'projvar'
-	print Vbad, 'Vbad'
-	exit()
 	return ((1 - Pbad) / sqrt(2.*pi*projvar) * exp(-0.5 * (projpos - bperp)**2 / projvar) +
 			Pbad / sqrt(2.*pi * Vbad) * exp(-0.5 * (projpos - Ybad)**2 / Vbad))
 
@@ -73,56 +71,39 @@ def marginalize_mixture(mixture=True, short=False):
 
 	random.seed(1) #In the interest of reproducibility (if that's a word)
 	# Read the data
-	data= genfromtxt('data_allerr_backup.dat',delimiter=",")
+	data= read_data('data_allerr.dat',True)
 	ndata= len(data)
-	print ndata
-	
 	# Create the ellipses and the data points
-	x= zeros((ndata))
-	y= zeros((ndata))
+	x= zeros(ndata)
+	y= zeros(ndata)
 	ellipses=[]
 	yvar= zeros((ndata,2,2))
-	#x = np.log10(np.abs(data[:, 1]))
-	x = data[:, 1]
-	y = data[:, 2]
-	yerr = data[:, 3]
-	xerr = data[:, 4]
-
-	
-	
-	
-	#Eigenvalues
 	for ii in range(ndata):
+		x[ii]= data[ii][1][0]
+		y[ii]= data[ii][1][1]
 		#Calculate the eigenvalues and the rotation angle
-		
-		yvar[ii,0,0]= yerr[ii]**2.
-		yvar[ii,1,1]= y[ii]**2.
-		yvar[ii,0,1]= xerr[ii]*sqrt(yvar[ii,0,0]*yvar[ii,1,1])
+		yvar[ii,0,0]= data[ii][3]**2.
+		yvar[ii,1,1]= data[ii][2]**2.
+		yvar[ii,0,1]= data[ii][4]*sqrt(yvar[ii,0,0]*yvar[ii,1,1])
 		yvar[ii,1,0]= yvar[ii,0,1]
 		eigs= linalg.eig(yvar[ii,:,:])
-
 		angle= arctan(-eigs[1][0,1]/eigs[1][1,1])/pi*180.
-		
 		thisellipse= Ellipse(array([x[ii],y[ii]]),2*sqrt(eigs[0][0]),
 							 2*sqrt(eigs[0][1]),angle)
 		ellipses.append(thisellipse)
-	
-	# initialize parameters
-	print x, y,  xerr, yerr, yvar, 'yvar'
-	theta = arctan2(y[7]-y[9],x[7]-x[9])
 
+	# initialize parameters
+	theta = arctan2(y[7]-y[9],x[7]-x[9])
 	bperp = (y[7] - tan(theta) * x[7]) * cos(theta) # bad at theta = 0.5 * pi
 	if mixture:
 		Pbad = 0.5
 	else:
 		Pbad = 0.
-		
 	Ybad = mean(y)
 	Vbad = mean((y-Ybad)**2)
-  
+
 	p = posterior(x, y, yvar, theta, bperp, Pbad, Ybad, Vbad)
-	print theta, yvar, Pbad, Ybad, Vbad
-	print 'starting p=', p, 'bperp', bperp
+	print 'starting p=', p
 
 	chain = []
 	oldp = p
@@ -133,7 +114,7 @@ def marginalize_mixture(mixture=True, short=False):
 	nsteps = 0
 	naccepts = 0
 
-	NSTEPS = 50000
+	NSTEPS = 500000
 	if short:
 		NSTEPS /= 2
 	print 'doing', NSTEPS, 'steps of MCMC...'
@@ -187,8 +168,8 @@ def marginalize_mixture(mixture=True, short=False):
 		e.set_facecolor('none')
 	xlabel(r'$x$')
 	ylabel(r'$y$')
-	xlim(np.min(x),np.max(x))
-	ylim(np.min(y),np.max(y))
+	xlim(1,4)
+	ylim(16.5,25)
 	savefig(prefix + '-data')
 
 	a = axis()
@@ -234,7 +215,7 @@ def marginalize_mixture(mixture=True, short=False):
 	#plot(ms, bs, 'k,', alpha=0.1)
 	xlabel('slope $m$')
 	ylabel('intercept $b$')
-	#savefig(prefix + '-mb-scatter.pdf')
+	#savefig(prefix + '-mb-scatter')
 
 	clf()
 	(H, xe, ye) = histogram2d(ms, bs, bins=(100,100))
