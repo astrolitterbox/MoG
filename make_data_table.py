@@ -8,10 +8,10 @@ califa_id = data[:, 0]
 #lum_err = 10*np.abs(data[:, 3]) + 2
 #vel_err = 100*np.abs(np.log10(np.abs(data[:, 4]))) + 2
 
-log_vel = np.log10(0.4*np.abs(data[:, 1]))
+log_vel = np.log10(np.abs(data[:, 1]))
 
 lum_err = np.abs(data[:, 3]) 
-vel_err = np.abs(np.log10(np.abs(data[:, 4]))) 
+vel_err = np.abs(np.log10(0.4*np.abs(data[:, 4]))) 
 lum = data[:, 2]
 
 out = np.zeros((data.shape[0], 7))

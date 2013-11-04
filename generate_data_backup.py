@@ -35,7 +35,7 @@ import numpy as nu
 #from sample_wishart import sample_wishart
 #from sample_normal import sample_normal
 
-def read_data(datafilename='data_allerr.dat',allerr=True):
+def read_data(datafilename='data_allerr_backup.dat',allerr=True):
     """read_data_yerr: Read the data from the file into a python structure
     Reads {x_i,y_i,sigma_yi}
 
@@ -54,24 +54,22 @@ def read_data(datafilename='data_allerr.dat',allerr=True):
     else:
         ncol= 4
     #Open data file
-    print ncol, 'ncol'
     datafile= open(datafilename,'r')
+    #catch-all re that reads numbers
+    expr= re.compile(r"-?[0-9]+(\.[0-9]*)?(E\+?-?[0-9]+)?")
     rawdata=[]
     nline= 0
     for line in datafile:
         if line[0] == '#':#Comments
             continue
         nline+= 1
-	print line
+        values= expr.finditer(line)
         nvalue= 0
-        floats = [float(x) for x in line.split(",")]
-        
-        for flt in floats:
-	  print flt
-	  rawdata.append(flt)	    
-	  nvalue+= 1
+        for i in values:
+            rawdata.append(float(i.group()))
+            nvalue+= 1
         if nvalue != ncol:
-            print nvalue, ncol, "Warning, number of columns for this record does not match the expected number"
+            print "Warning, number of columns for this record does not match the expected number"
     #Now process the raw data
     out=[]
     for ii in range(nline):

@@ -14,7 +14,7 @@ from matplotlib import rcParams
 import scipy.linalg as linalg
 from matplotlib.patches import Ellipse
 from matplotlib.colors import LinearSegmentedColormap
-import emcee
+import sampler, ensemble
 
 # a colormap that goes from white to black: the opposite of matplotlib.gray()
 antigray = LinearSegmentedColormap('antigray',
@@ -34,7 +34,8 @@ def single_point_likelihoods(x, y, yvar, theta, bperp, Pbad, Ybad, Vbad):
 	return ((1 - Pbad) / sqrt(2.*pi*projvar) * exp(-0.5 * (projpos - bperp)**2 / projvar) +
 			Pbad / sqrt(2.*pi * Vbad) * exp(-0.5 * (projpos - Ybad)**2 / Vbad))
 
-def likelihood(x, y, yvar, theta, bperp, Pbad, Ybad, Vbad):
+def likelihood(args):
+	x, y, yvar, theta, bperp, Pbad, Ybad, Vbad = args
 	return prod(single_point_likelihoods(x, y, yvar, theta, bperp, Pbad, Ybad, Vbad))
 
 # Technically an improper prior (we just do naive range checks).  Feel free to insert your own.
@@ -42,8 +43,9 @@ def prior(theta, bperp, Pbad, Ybad, Vbad):
 	return (Pbad >= 0) * (Pbad < 1) * (Vbad > 0)
 
 # Not properly normalized (with the original prior)
-def posterior(x, y, yvar, theta, bperp, Pbad, Ybad, Vbad):
-	return likelihood(x, y, yvar, theta, bperp, Pbad, Ybad, Vbad) * prior(theta, bperp, Pbad, Ybad, Vbad)
+def posterior(args):
+	x, y, yvar, theta, bperp, Pbad, Ybad, Vbad = args 
+	return likelihood(args) * prior(theta, bperp, Pbad, Ybad, Vbad)
 
 def pick_new_parameters(nsteps, theta, bperp, Pbad, Ybad, Vbad):
 	thetascale = 0.01
@@ -93,6 +95,7 @@ def marginalize_mixture(mixture=True, short=False):
 		ellipses.append(thisellipse)
 
 	# initialize parameters
+	
 	theta = arctan2(y[7]-y[9],x[7]-x[9])
 	bperp = (y[7] - tan(theta) * x[7]) * cos(theta) # bad at theta = 0.5 * pi
 	if mixture:
@@ -102,9 +105,22 @@ def marginalize_mixture(mixture=True, short=False):
 	Ybad = mean(y)
 	Vbad = mean((y-Ybad)**2)
 
-	p = posterior(x, y, yvar, theta, bperp, Pbad, Ybad, Vbad)
-	print 'starting p=', p
-
+	p0 = posterior((x, y, yvar, theta, bperp, Pbad, Ybad, Vbad))
+	
+	Nwalkers = 300
+	Npar = 5
+	Nthreads = 4
+	Nburn = 200
+	Nmcmc = 400
+	print 'starting p=', p0
+	sampl = ensemble.EnsembleSampler(Nwalkers, Npar, likelihood, args=(x, y, yvar, theta, bperp, Pbad, Ybad, Vbad), threads=Nthreads)		
+	pos, prob, state = sampl.run_mcmc(p0, Nburn)
+	sampl.reset()
+	sampl.run_mcmc(pos, Nmcmc, rstate0=state)
+	acceptanceFraction = np.mean(sampl.acceptance_fraction)
+	print("Mean acceptance fraction:", acceptanceFraction)
+	print("Autocorrelation time:", sampl.acor)
+	exit()
 	chain = []
 	oldp = p
 	oldparams = (theta, bperp, Pbad, Ybad, Vbad)
@@ -113,8 +129,10 @@ def marginalize_mixture(mixture=True, short=False):
 
 	nsteps = 0
 	naccepts = 0
+	
+	
 
-	NSTEPS = 500000
+	NSTEPS = 50000
 	if short:
 		NSTEPS /= 2
 	print 'doing', NSTEPS, 'steps of MCMC...'

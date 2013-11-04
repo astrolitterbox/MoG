@@ -163,8 +163,8 @@ def ex13(exclude=sc.array([]),plotfilename='ex13.png',
 
     #Plot result
     plot.bovy_print(**bovyprintargs)
-    xrange=[100,300]
-    yrange=[1700,3800]
+    xrange=[1,4]
+    yrange=[-25,-17]
     plot.bovy_plot(sc.array(xrange),mf*sc.array(xrange)+b,
                    'k-',xrange=xrange,yrange=yrange,
                    xlabel=r'$x$',ylabel=r'$y$',zorder=2)

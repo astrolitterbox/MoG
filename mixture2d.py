@@ -113,7 +113,7 @@ def marginalize_mixture(mixture=True, short=False):
 	nsteps = 0
 	naccepts = 0
 
-	NSTEPS = 50000
+	NSTEPS = 200000
 	if short:
 		NSTEPS /= 2
 	print 'doing', NSTEPS, 'steps of MCMC...'
@@ -167,9 +167,9 @@ def marginalize_mixture(mixture=True, short=False):
 		e.set_facecolor('none')
 	xlabel(r'$x$')
 	ylabel(r'$y$')
-	xlim(0,300)
-	ylim(0,700)
-	savefig(prefix + '-data.pdf')
+	xlim(1,4)
+	ylim(-16.5,-25)
+	savefig(prefix + '-data')
 
 	a = axis()
 	xmin, xmax = xlim()
@@ -187,7 +187,7 @@ def marginalize_mixture(mixture=True, short=False):
 		ys = tan(theta) * xs + bperp / cos(theta) # replace this with smarter linear algebra
 		plot(xs, ys, color='k', alpha=0.3)
 	axis(a)
-	savefig(prefix + '-xy.pdf')
+	savefig(prefix + '-xy')
 
 	if mixture:
 		bgp = zeros(len(x))
@@ -197,6 +197,7 @@ def marginalize_mixture(mixture=True, short=False):
 			bgp += Pbad		 * single_point_likelihoods(x, y, yvar, theta, bperp, 1, Ybad, Vbad)
 			fgp += (1.-Pbad) * single_point_likelihoods(x, y, yvar, theta, bperp, 0, Ybad, Vbad)
 		bgodds = bgp / fgp
+		np.savetxt("bgodds.csv", np.log10(bgodds))
 		for i,bgo in enumerate(bgodds):
 			if bgo < 1:
 				continue
@@ -205,7 +206,7 @@ def marginalize_mixture(mixture=True, short=False):
 			t = text(x[i]+dxl, y[i]+dyl, '%.1f' % log10(bgo),
 					 horizontalalignment='left',
 					 verticalalignment='bottom', alpha=0.3)
-		savefig(prefix + '-xy-bg.pdf')
+		savefig(prefix + '-xy-bg')
 
 	clf()
 	# note horrifying theta = 0.5 * pi behavior!
@@ -214,7 +215,7 @@ def marginalize_mixture(mixture=True, short=False):
 	#plot(ms, bs, 'k,', alpha=0.1)
 	xlabel('slope $m$')
 	ylabel('intercept $b$')
-	#savefig(prefix + '-mb-scatter.pdf')
+	#savefig(prefix + '-mb-scatter')
 
 	clf()
 	(H, xe, ye) = histogram2d(ms, bs, bins=(100,100))
@@ -222,7 +223,7 @@ def marginalize_mixture(mixture=True, short=False):
 		   cmap=antigray)
 	xlabel('slope $m$')
 	ylabel('intercept $b$')
-	savefig(prefix + '-mb.pdf')
+	savefig(prefix + '-mb')
 
 if __name__ == '__main__':
 	args = sys.argv[1:]
