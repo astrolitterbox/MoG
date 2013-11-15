@@ -98,7 +98,9 @@ def marginalize_mixture(mixture=True, short=False):
 		Pbad = 0.5
 	else:
 		Pbad = 0.
-	Ybad = mean(y)
+	Ybad = -22.185434785714286 #was mean(y), from tidal parameter
+	print Ybad
+
 	Vbad = mean((y-Ybad)**2)
 
 	p = posterior(x, y, yvar, theta, bperp, Pbad, Ybad, Vbad)
@@ -215,7 +217,7 @@ def marginalize_mixture(mixture=True, short=False):
 	#plot(ms, bs, 'k,', alpha=0.1)
 	xlabel('slope $m$')
 	ylabel('intercept $b$')
-	#savefig(prefix + '-mb-scatter')
+	savefig(prefix + '-mb-scatter')
 
 	clf()
 	(H, xe, ye) = histogram2d(ms, bs, bins=(100,100))
