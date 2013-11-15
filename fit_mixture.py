@@ -28,7 +28,7 @@ def logTFResiduals(params, data):
 	x, y, xerr, yerr = data
 	slope, offset = params  
 	N = y.shape[0]
-	return np.sum((1/N)*((y - LogTFmodel(params, data))**2/(xerr**2 + slope**2 * yerr**2))) 
+	return np.sum((1/N)*((y - LogTFmodel(params, data))**2/(yerr**2))) 
 
 
 def getPrior(params):
@@ -37,13 +37,19 @@ def getPrior(params):
   else:
           return 0
 
+def getLikelihood(params, data):
+	x, y, xerr, yerr = data	
+	slope, offset = params
+	likelihood = np.sum(-0.5*((y - LogTFmodel(params, data))**2)/(2*yerr**2))
+	return likelihood
+
 def lnProb(params, data):
-	x, y, xerr, yerr = data
 	resid = logTFResiduals(params, data)
 	prior = getPrior(params)
-	lnl = -0.5*((resid)) #log-likelihood
-
+	#lnl = -0.5*((resid)) #log-likelihood
+	lnl = getLikelihood(params, data)
  	return lnl + prior
+
 
 def LogTFmodel(params, data):
 	x, y, xerr, yerr = data
@@ -164,5 +170,5 @@ ax2.scatter(log_vel, absMag, c='k', s=10, edgecolor="k", label="CALIFA VF", zord
 #e = plt.plot(log_vel, -7.5*log_vel -21.36, c="grey")
 plt.xlabel(r"$v_{2.2}$", fontsize=18)
 plt.ylabel(r"$M_{r}$", fontsize=18)
-ax2.axis([1.5, 2.7, -18, -24.5])
+#ax2.axis([1.5, 2.7, -18, -24.5])
 plt.savefig("TFR")
